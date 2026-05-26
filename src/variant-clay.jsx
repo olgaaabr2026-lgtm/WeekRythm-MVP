@@ -560,7 +560,7 @@ function CRhythm({ value, status }) {
         fontSize: 9, letterSpacing: '0.16em',
         color: CLAY.muted, textTransform: 'uppercase'
       }}>
-        <span>пауза</span><span>риск</span><span>живо</span><span>дышит</span>
+        <span>пауза</span><span>ритм</span><span>живо</span><span>дышит</span>
       </div>
     </div>
   );
@@ -665,7 +665,7 @@ function Bowl({ sphere, delay, seed }) {
 }
 
 // ───────────────────────── week board ─────────────────────────
-function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onDelete, onCloseDay, onOpenDay, onDrop, dragOverDate, setDragOver, vp }) {
+function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onDelete, onCloseDay, onOpenDay, onDrop, dragOverDate, setDragOver, vp, onNew }) {
   const weekDs = getCurrentWeekDates();
   return (
     <div className="clay-section" style={{ position: 'relative', margin: vp.isMobile ? '0 16px' : '0 48px' }}>
@@ -687,17 +687,38 @@ function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onD
           }}>Семь камней недели</div>
         </div>
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          fontFamily: 'Fraunces, Georgia, serif', fontStyle: 'italic',
-          fontSize: 14, color: CLAY.inkSoft
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          width: vp.isMobile ? '100%' : 'auto'
         }}>
-          <span>Перетащи задачу, чтобы перенести</span>
+          {!vp.isMobile && (
+            <span style={{
+              fontFamily: 'Fraunces, Georgia, serif', fontStyle: 'italic',
+              fontSize: 14, color: CLAY.inkSoft
+            }}>Перетащи задачу, чтобы перенести</span>
+          )}
           <span style={{
             padding: '4px 10px', background: CLAY.paperSoft, borderRadius: 999,
             fontFamily: '"JetBrains Mono", monospace', fontSize: 10,
             letterSpacing: '0.1em', color: CLAY.muted, fontWeight: 600,
             border: `1px solid ${CLAY.border}`
           }}>{progress.completed} / {progress.total}</span>
+          {onNew && (
+            <button
+              onClick={onNew}
+              style={{
+                fontFamily: '"JetBrains Mono", monospace',
+                fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+                padding: vp.isMobile ? '10px 0' : '7px 16px',
+                borderRadius: 999,
+                background: CLAY.coral, color: '#fff',
+                border: 'none', cursor: 'pointer', fontWeight: 700,
+                width: vp.isMobile ? '100%' : 'auto',
+                transition: 'opacity 0.15s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            >+ Новая задача</button>
+          )}
         </div>
       </div>
 
@@ -1832,6 +1853,7 @@ export default function ClayVariant() {
         dragOverDate={state.ui.dragOverDate}
         setDragOver={(d) => dispatch({ type: 'UI', ui: { dragOverDate: d }})}
         vp={vp}
+        onNew={() => openNew()}
       />
 
       <div className="clay-section" style={{

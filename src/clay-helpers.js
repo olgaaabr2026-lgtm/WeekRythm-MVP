@@ -395,9 +395,18 @@ function calcProgress(tasks, closedDays) {
   const rhythm = total ? Math.round(0.5 * progressScore + 0.3 * noOverloadScore + 0.2 * restScore) : 0;
 
   let rhythmStatus = 'Неделя дышит';
-  if (rhythm <= 39) rhythmStatus = 'Нужна спасательная пауза';
-  else if (rhythm <= 64) rhythmStatus = 'Есть риск мини-апокалипсиса';
-  else if (rhythm <= 84) rhythmStatus = 'Плотная, но живая';
+
+  if (percent === 0 && overloaded === 0 && total > 0) {
+    // Задачи есть, ни одна не выполнена, кризиса нет — неделя просто ещё не началась.
+    // Не нужно пугать «апокалипсисом» в воскресенье вечером или понедельник утром.
+    rhythmStatus = 'Неделя ещё впереди';
+  } else if (rhythm <= 39) {
+    rhythmStatus = 'Нужна спасательная пауза';
+  } else if (rhythm <= 64) {
+    rhythmStatus = 'Набираем ритм';
+  } else if (rhythm <= 84) {
+    rhythmStatus = 'Плотная, но живая';
+  }
 
   return {
     total, completed, remaining, percent,
