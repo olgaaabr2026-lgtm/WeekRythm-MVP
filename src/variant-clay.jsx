@@ -19,7 +19,7 @@ import {
 } from './clay-modals.jsx';
 import {
   exportJSON, getOrCreateUid, getShareUrl,
-  importJSON, loadFromCloud, scheduleSave
+  importJSON, isCloudEnabled, loadFromCloud, scheduleSave
 } from './sync.js';
 
 // ───────────────────────── reducer ─────────────────────────
@@ -1422,7 +1422,7 @@ const SYNC_LABEL = {
   offline: { text: 'офлайн',         dot: CLAY_LIGHT.muted  }
 };
 
-function ShareMenu({ open, onClose, onPDF, onEmail, onExport, onImport, uid, syncStatus, onCopyLink }) {
+function ShareMenu({ open, onClose, onPDF, onEmail, onExport, onImport, uid, syncStatus, onCopyLink, cloudEnabled }) {
   useEffect(() => {
     if (!open) return;
     const onKey = e => { if (e.key === 'Escape') onClose(); };
@@ -1440,7 +1440,7 @@ function ShareMenu({ open, onClose, onPDF, onEmail, onExport, onImport, uid, syn
       label: 'Скопировать личную ссылку',
       hint: 'Открывает ваши данные на любом устройстве',
       do: () => shareUrl && onCopyLink(shareUrl),
-      hide: !uid
+      hide: !uid || !cloudEnabled
     },
     { glyph: '⬇', label: 'Сохранить резервную копию', hint: 'Скачать файл .json — открывается на другом устройстве через «Загрузить»', do: onExport },
     { glyph: '⬆', label: 'Загрузить резервную копию', hint: 'Открыть .json файл с другого устройства', do: onImport },
@@ -1487,7 +1487,7 @@ function ShareMenu({ open, onClose, onPDF, onEmail, onExport, onImport, uid, syn
         </div>
 
         {/* uid-строка для ручного ввода */}
-        {uid && (
+        {uid && cloudEnabled && (
           <div style={{
             margin: '0 14px 10px',
             padding: '8px 12px',
@@ -2075,6 +2075,7 @@ export default function ClayVariant() {
         onImport={() => importFileRef.current?.click()}
         uid={uid}
         syncStatus={syncStatus}
+        cloudEnabled={isCloudEnabled()}
         onCopyLink={(url) => {
           navigator.clipboard.writeText(url).then(() =>
             dispatch({ type: 'UI', ui: {
