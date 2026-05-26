@@ -1,0 +1,133 @@
+/* Shared global animations + keyframes for all wellness planner variants */
+
+/* Garden variant — paper garden */
+@keyframes garden-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(20px, -16px) scale(1.08); }
+}
+@keyframes garden-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 12px rgba(196,104,90,0.25), inset 0 -2px 6px rgba(0,0,0,0.08); }
+  50%      { transform: scale(1.05); box-shadow: 0 6px 18px rgba(196,104,90,0.35), inset 0 -2px 6px rgba(0,0,0,0.08); }
+}
+@keyframes garden-arc-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes garden-needle-sweep {
+  from { transform: rotate(-90deg); }
+}
+@keyframes garden-vessel-fill {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes garden-wave {
+  0%, 100% { transform: translateX(-2%) scaleY(1); }
+  50%      { transform: translateX(2%) scaleY(1.4); }
+}
+@keyframes garden-bubble {
+  0%   { transform: translateY(0); opacity: 0; }
+  20%  { opacity: 0.8; }
+  100% { transform: translateY(-100px); opacity: 0; }
+}
+@keyframes garden-day-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes garden-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.4); opacity: 0.5; }
+}
+@keyframes garden-check-pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+@keyframes garden-bloom {
+  from { width: 0%; }
+}
+@keyframes garden-shimmer {
+  0%, 100% { transform: translateX(-100%); }
+  50%      { transform: translateX(100%); }
+}
+
+/* Morning variant — quiet editorial */
+@keyframes morning-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes morning-line-draw {
+  from { stroke-dashoffset: 200; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes morning-arc-trace {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes morning-fill-rise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+@keyframes morning-glow {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.08); }
+}
+
+/* Clay variant — workshop */
+@keyframes clay-rise {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes clay-mood-breathe {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50%      { transform: scale(1.03) rotate(2deg); }
+}
+@keyframes clay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes clay-modal-rise {
+  from { opacity: 0; transform: translateY(20px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes clay-toast-rise {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes clay-saved-pulse {
+  0%   { opacity: 0; transform: translateY(-4px); }
+  20%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+@keyframes clay-today-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 3px rgba(196,74,50,1), inset 0 -4px 10px rgba(90,50,30,0.08), 0 10px 28px rgba(196,74,50,0.25); }
+  50%      { box-shadow: inset 0 0 0 3px rgba(196,74,50,1), inset 0 -4px 10px rgba(90,50,30,0.08), 0 16px 40px rgba(196,74,50,0.4); }
+}
+@keyframes clay-drag-over {
+  0%, 100% { background: var(--drop-bg, transparent); }
+  50%      { background: rgba(196,74,50,0.18); }
+}
+@keyframes clay-particle {
+  0%   { transform: translate(0, 0) scale(0); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: translate(var(--px,0), var(--py,0)) scale(1); opacity: 0; }
+}
+@keyframes clay-bowl-fill {
+  from { clip-path: inset(100% 0 0 0); }
+  to   { clip-path: inset(var(--fill, 50%) 0 0 0); }
+}
+@keyframes clay-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes clay-knead {
+  0%, 100% { border-radius: 28px 32px 30px 26px / 30px 26px 32px 28px; }
+  50%      { border-radius: 30px 26px 32px 28px / 26px 32px 28px 30px; }
+}
+@keyframes clay-pulse-ring {
+  0%   { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.5);  opacity: 0; }
+}
+
+/* Page-load stagger for all variants */
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

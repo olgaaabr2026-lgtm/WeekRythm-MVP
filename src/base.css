@@ -1,0 +1,30 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: #f0e4d5;
+  font-family: 'Inter', sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+#root .boot-message {
+  padding: 32px;
+  color: #3a2418;
+  font-family: 'Inter', sans-serif;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: rgba(90, 50, 30, 0.18);
+  border-radius: 4px;
+}

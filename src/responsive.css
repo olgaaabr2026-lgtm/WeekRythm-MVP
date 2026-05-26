@@ -1,0 +1,78 @@
+/* Global responsive styles for JSX inline styles */
+
+@media (max-width: 768px) {
+  .clay-wash { display: none !important; }
+
+  .clay-grain { opacity: 0.3 !important; }
+
+  button, [role="button"], .clay-chip {
+    min-height: 44px !important;
+  }
+
+  .clay-modal-content {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 92vh !important;
+    margin: 0 !important;
+    border-radius: 24px 24px 0 0 !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    animation: clay-modal-rise-mobile 0.3s cubic-bezier(0.34,1.2,0.64,1) backwards !important;
+  }
+
+  .clay-section {
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+  }
+
+  .clay-week-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+  }
+
+  .clay-week-scroll > * { scroll-snap-align: start; }
+
+  .clay-progress-stats {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@keyframes clay-modal-rise-mobile {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.clay-week-scroll::-webkit-scrollbar { height: 4px; }
+.clay-week-scroll::-webkit-scrollbar-thumb { background: rgba(90,50,30,0.2); border-radius: 2px; }
+
+/* Toast — мобильная адаптация */
+@media (max-width: 480px) {
+  .clay-toast {
+    left: 16px !important;
+    right: 16px !important;
+    transform: none !important;
+    max-width: none !important;
+    width: auto !important;
+    padding: 12px 16px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Toast — для очень узких экранов: текст и кнопка в столбик */
+@media (max-width: 360px) {
+  .clay-toast {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .clay-toast > button {
+    width: 100%;
+  }
+}
