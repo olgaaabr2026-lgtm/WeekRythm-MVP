@@ -445,13 +445,16 @@ function calcAdvice(tasks, isFirstVisit) {
     return { text: 'Отдых пока не попал в план. Он тоже задача, просто добрая.', action: null };
   }
 
-  if (antiCount >= 4) {
-    return { text: 'Антихаос немного разросся. Можно выбрать одну задачу и найти ей день.', action: null };
+  // Проверяем долю нагрузки от работы, а не количество задач.
+  // С CATEGORY_MULT 3 тяжёлые рабочие задачи дают 97% нагрузки, даже если 7 задач — отдых.
+  const totalLoad = inWeek.reduce((s, t) => s + taskScore(t), 0);
+  const workLoad  = inWeek.filter(t => t.category === 'work').reduce((s, t) => s + taskScore(t), 0);
+  if (totalLoad > 0 && workLoad / totalLoad > 0.6) {
+    return { text: 'Работа занимает почти всю неделю. Проверь, есть ли там место для тебя.', action: null };
   }
 
-  const workCount = inWeek.filter(t => t.category === 'work').length;
-  if (inWeek.length > 0 && workCount / inWeek.length > 0.6) {
-    return { text: 'Работа занимает почти всю неделю. Проверь, есть ли там место для тебя.', action: null };
+  if (antiCount >= 4) {
+    return { text: 'Антихаос немного разросся. Можно выбрать одну задачу и найти ей день.', action: null };
   }
 
   if (inWeek.length > 0) {
