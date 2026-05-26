@@ -525,102 +525,84 @@ function CRhythm({ value, status }) {
       </div>
 
       {/*
-        maxWidth:260 — не даёт дуге расти на всю ширину карточки.
-        Без него SVG width:100% → arc ~450px → карточка вдвое выше CBalance.
-        padding-bottom trick: высота = 56.25% ширины (= 135/240).
-        Это гарантирует, что top/left % для пака = координаты viewBox.
+        maxWidth:260 ограничивает рост дуги.
+        aspect-ratio задаёт высоту явно (= ширина × 135/240),
+        поэтому top/left в % для абсолютного пака считаются правильно.
+        (padding-bottom trick не работает: top:% абсолютного элемента
+        считается от content-height=0, а не от padding.)
       */}
       <div style={{ width: '100%', maxWidth: 260, margin: '0 auto' }}>
-        <div style={{ position: 'relative', height: 0, paddingBottom: '56.25%' }}>
-        <svg
-          viewBox="0 0 240 135"
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}
-          aria-hidden="true"
-        >
-          {/* трек (серый) */}
-          <path
-            d={arcPath(0, 100)}
-            fill="none"
-            stroke={CLAY.clay}
-            strokeWidth={sw}
-            strokeLinecap="round"
-          />
-          {/* прогресс (цветной) */}
-          <path
-            d={arcPath(0, value || 1)}
-            fill="none"
-            stroke={moodColor}
-            strokeWidth={sw}
-            strokeLinecap="round"
-            style={{
-              filter: `drop-shadow(0 2px 4px ${moodColor}66)`,
-              strokeDasharray: 1000,
-              strokeDashoffset: 1000,
-              animation: 'morning-arc-trace 1.8s 0.3s ease-out forwards',
-            }}
-          />
-          {/* метки шкалы */}
-          {[0, 33, 66, 100].map((tv, i) => {
-            const a  = Math.PI + (tv / 100) * Math.PI;
-            const tx = c + (r + sw / 2 + 14) * Math.cos(a);
-            const ty = c + (r + sw / 2 + 14) * Math.sin(a) + 3;
-            return (
-              <text
-                key={tv}
-                x={tx} y={ty}
-                textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}
-                style={{
-                  fontFamily: '"JetBrains Mono", monospace',
-                  fontSize: 9, fill: CLAY.muted, letterSpacing: '0.1em'
-                }}
-              >
-                {['0','33','66','100'][i]}
-              </text>
-            );
-          })}
-        </svg>
+        <div style={{
+          position: 'relative',
+          aspectRatio: '240 / 135',
+          width: '100%',
+        }}>
+          <svg
+            viewBox="0 0 240 135"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible' }}
+            aria-hidden="true"
+          >
+            {/* трек (серый) */}
+            <path d={arcPath(0, 100)} fill="none" stroke={CLAY.clay} strokeWidth={sw} strokeLinecap="round"/>
+            {/* прогресс (цветной) */}
+            <path
+              d={arcPath(0, value || 1)} fill="none"
+              stroke={moodColor} strokeWidth={sw} strokeLinecap="round"
+              style={{
+                filter: `drop-shadow(0 2px 4px ${moodColor}66)`,
+                strokeDasharray: 1000, strokeDashoffset: 1000,
+                animation: 'morning-arc-trace 1.8s 0.3s ease-out forwards',
+              }}
+            />
+            {/* метки шкалы */}
+            {[0, 33, 66, 100].map((tv, i) => {
+              const a  = Math.PI + (tv / 100) * Math.PI;
+              const tx = c + (r + sw / 2 + 14) * Math.cos(a);
+              const ty = c + (r + sw / 2 + 14) * Math.sin(a) + 3;
+              return (
+                <text key={tv} x={tx} y={ty}
+                  textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}
+                  style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, fill: CLAY.muted, letterSpacing: '0.1em' }}>
+                  {['0','33','66','100'][i]}
+                </text>
+              );
+            })}
+          </svg>
 
           {/*
-            Пак. left:50% = x=120/240 viewBox. top:50% = y=67.5/135 viewBox
-            = геометрический центр чаши (между top=20 и bottom=120).
-            padding-bottom trick гарантирует, что % всегда точны.
+            Пак поверх SVG.
+            Дуга: центр (c=120, y=120), r=100.
+            Центр чаши: x=120 → left=50%, y=70 (середина от y=20 до y=120) → top=70/135≈52%.
+            aspect-ratio на контейнере делает высоту явной, поэтому % работают точно.
           */}
           <div style={{
             position: 'absolute',
-            top: '50%',
+            top: '52%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: '34%',
             aspectRatio: '1 / 1',
             background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
             borderRadius: blob(7),
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
             boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
             animation: 'clay-mood-breathe 5s ease-in-out infinite',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            boxSizing: 'border-box',
-            zIndex: 1,
+            pointerEvents: 'none', userSelect: 'none',
+            boxSizing: 'border-box', zIndex: 1,
           }}>
             <div style={{
               fontFamily: 'Fraunces, Georgia, serif',
-              fontSize: 28,
-              fontWeight: 300,
-              color: CLAY.ink,
-              lineHeight: 1,
+              fontSize: 28, fontWeight: 300,
+              color: CLAY.ink, lineHeight: 1,
             }}>{value}</div>
             <div style={{
-              fontSize: 16,
-              color: moodColor,
-              marginTop: 2,
-              fontWeight: 700,
+              fontSize: 16, color: moodColor,
+              marginTop: 2, fontWeight: 700,
             }}>{mood}</div>
           </div>
-        </div>{/* /padding-bottom */}
-      </div>{/* /maxWidth */}
+        </div>
+      </div>
 
       <div style={{
         position: 'relative', textAlign: 'center', marginTop: 8,
