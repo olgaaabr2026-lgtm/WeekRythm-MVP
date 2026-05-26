@@ -515,8 +515,8 @@ function CRhythm({ value, status }) {
         }}>Настроение недели</div>
       </div>
 
-      <div style={{ position: 'relative', width: '100%', maxWidth: 300, margin: '0 auto' }}>
-        <svg viewBox="0 0 240 150" width="100%" style={{ overflow: 'visible', display: 'block' }}>
+      <div style={{ position: 'relative', width: '100%', margin: '0 auto' }}>
+        <svg viewBox="0 0 240 160" width="100%" style={{ overflow: 'visible', display: 'block' }}>
           <path d={arcPath(0, 100)} fill="none" stroke={CLAY.clay} strokeWidth={sw} strokeLinecap="round"/>
           <path d={arcPath(0, value || 1)} fill="none"
             stroke={moodColor} strokeWidth={sw} strokeLinecap="round"
@@ -539,27 +539,29 @@ function CRhythm({ value, status }) {
               </text>
             );
           })}
+          {/* пак с числом — внутри SVG, позиция не зависит от масштаба */}
+          <foreignObject x="70" y="50" width="100" height="100">
+            <div xmlns="http://www.w3.org/1999/xhtml" style={{
+              width: '100%', height: '100%',
+              background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
+              borderRadius: blob(7),
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'center',
+              boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
+              animation: 'clay-mood-breathe 5s ease-in-out infinite',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{
+                fontFamily: 'Fraunces, Georgia, serif',
+                fontSize: 38, fontWeight: 300,
+                color: CLAY.ink, lineHeight: 1
+              }}>{value}</div>
+              <div style={{
+                fontSize: 18, color: moodColor, marginTop: -4, fontWeight: 700
+              }}>{mood}</div>
+            </div>
+          </foreignObject>
         </svg>
-        <div style={{
-          position: 'absolute', left: '50%', top: 50,
-          transform: 'translateX(-50%)',
-          width: 100, height: 100,
-          background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
-          borderRadius: blob(7),
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
-          animation: 'clay-mood-breathe 5s ease-in-out infinite'
-        }}>
-          <div style={{
-            fontFamily: 'Fraunces, Georgia, serif',
-            fontSize: 38, fontWeight: 300,
-            color: CLAY.ink, lineHeight: 1
-          }}>{value}</div>
-          <div style={{
-            fontSize: 18, color: moodColor, marginTop: -4, fontWeight: 700
-          }}>{mood}</div>
-        </div>
       </div>
 
       <div style={{
