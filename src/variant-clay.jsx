@@ -525,14 +525,16 @@ function CRhythm({ value, status }) {
       </div>
 
       {/*
-        Обёртка position:relative — якорь для абсолютного пака.
-        SVG: viewBox 240×135 (обрезан снизу; дуга + метки умещаются до y≈131).
-        overflow:visible сохраняет видимость меток у краёв.
+        maxWidth:260 — не даёт дуге расти на всю ширину карточки.
+        Без него SVG width:100% → arc ~450px → карточка вдвое выше CBalance.
+        padding-bottom trick: высота = 56.25% ширины (= 135/240).
+        Это гарантирует, что top/left % для пака = координаты viewBox.
       */}
-      <div style={{ position: 'relative', width: '100%' }}>
+      <div style={{ width: '100%', maxWidth: 260, margin: '0 auto' }}>
+        <div style={{ position: 'relative', height: 0, paddingBottom: '56.25%' }}>
         <svg
           viewBox="0 0 240 135"
-          style={{ display: 'block', width: '100%', overflow: 'visible' }}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'visible' }}
           aria-hidden="true"
         >
           {/* трек (серый) */}
@@ -578,48 +580,47 @@ function CRhythm({ value, status }) {
           })}
         </svg>
 
-        {/*
-          Пак — наложен поверх SVG, не внутри него.
-          left: 50%  → x = 120/240 = 50% viewBox
-          top:  58%  → y ≈ 78/135 = 57.8% viewBox (центроид чаши)
-          width: 31% → ≈ 75px при типичной ширине карточки
-          aspect-ratio 1:1 сохраняет круглость на любой ширине
-        */}
-        <div style={{
-          position: 'absolute',
-          top: '58%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '31%',
-          aspectRatio: '1 / 1',
-          background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
-          borderRadius: blob(7),
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
-          animation: 'clay-mood-breathe 5s ease-in-out infinite',
-          pointerEvents: 'none',
-          userSelect: 'none',
-          boxSizing: 'border-box',
-          zIndex: 1,
-        }}>
+          {/*
+            Пак. left:50% = x=120/240 viewBox. top:50% = y=67.5/135 viewBox
+            = геометрический центр чаши (между top=20 и bottom=120).
+            padding-bottom trick гарантирует, что % всегда точны.
+          */}
           <div style={{
-            fontFamily: 'Fraunces, Georgia, serif',
-            fontSize: 'clamp(16px, 2.8vw, 38px)',
-            fontWeight: 300,
-            color: CLAY.ink,
-            lineHeight: 1,
-          }}>{value}</div>
-          <div style={{
-            fontSize: 'clamp(11px, 1.5vw, 18px)',
-            color: moodColor,
-            marginTop: 2,
-            fontWeight: 700,
-          }}>{mood}</div>
-        </div>
-      </div>
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '34%',
+            aspectRatio: '1 / 1',
+            background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
+            borderRadius: blob(7),
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
+            animation: 'clay-mood-breathe 5s ease-in-out infinite',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            boxSizing: 'border-box',
+            zIndex: 1,
+          }}>
+            <div style={{
+              fontFamily: 'Fraunces, Georgia, serif',
+              fontSize: 28,
+              fontWeight: 300,
+              color: CLAY.ink,
+              lineHeight: 1,
+            }}>{value}</div>
+            <div style={{
+              fontSize: 16,
+              color: moodColor,
+              marginTop: 2,
+              fontWeight: 700,
+            }}>{mood}</div>
+          </div>
+        </div>{/* /padding-bottom */}
+      </div>{/* /maxWidth */}
 
       <div style={{
         position: 'relative', textAlign: 'center', marginTop: 8,
