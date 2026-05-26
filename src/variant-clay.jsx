@@ -17,6 +17,10 @@ import {
   ChoiceCard, ClayButton, ClayLabel, ClayModal, CloseDayModal, MoveModal,
   SavedIndicator, TaskFormModal, ToastStack, WeekTransitionModal
 } from './clay-modals.jsx';
+import {
+  exportJSON, getOrCreateUid, getShareUrl,
+  importJSON, loadFromCloud, scheduleSave
+} from './sync.js';
 
 // ───────────────────────── reducer ─────────────────────────
 const initialState = {
@@ -215,6 +219,19 @@ function reducer(state, action) {
         });
       }
       return state;
+    }
+    case 'LOAD_STATE': {
+      const p = action.payload;
+      return touch({
+        ...initialState,
+        tasks: Array.isArray(p.tasks) ? p.tasks : [],
+        closedDays: p.closedDays || {},
+        ui: {
+          ...initialState.ui,
+          lastSeenWeekId: p.lastSeenWeekId || null,
+          userClearedAll: p.userClearedAll === true
+        }
+      });
     }
     case 'CLEAR_TOAST':
       return { ...state, ui: { ...state.ui, toast: null } };
@@ -1376,7 +1393,17 @@ function CBadges({ progress, antiCount }) {
 }
 
 // ───────────────────────── share menu ─────────────────────────
-function ShareMenu({ open, onClose, onPDF, onEmail }) {
+// Метки статуса синхронизации
+const SYNC_LABEL = {
+  idle:    null,
+  pending: { text: 'ожидание…',      dot: CLAY_LIGHT.amber  },
+  syncing: { text: 'синхронизация…', dot: CLAY_LIGHT.peach  },
+  saved:   { text: 'в облаке ✓',     dot: '#476039'         },
+  error:   { text: 'не сохранено',   dot: CLAY_LIGHT.coral  },
+  offline: { text: 'офлайн',         dot: CLAY_LIGHT.muted  }
+};
+
+function ShareMenu({ open, onClose, onPDF, onEmail, onExport, onImport, uid, syncStatus, onCopyLink }) {
   useEffect(() => {
     if (!open) return;
     const onKey = e => { if (e.key === 'Escape') onClose(); };
@@ -1384,10 +1411,24 @@ function ShareMenu({ open, onClose, onPDF, onEmail }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
   if (!open) return null;
+
+  const syncInfo = SYNC_LABEL[syncStatus];
+  const shareUrl = uid ? getShareUrl(uid) : null;
+
   const actions = [
+    {
+      glyph: '🔗',
+      label: 'Скопировать личную ссылку',
+      hint: 'Открывает ваши данные на любом устройстве',
+      do: () => shareUrl && onCopyLink(shareUrl),
+      hide: !uid
+    },
+    { glyph: '⬇', label: 'Сохранить резервную копию', hint: 'Скачать файл .json — открывается на другом устройстве через «Загрузить»', do: onExport },
+    { glyph: '⬆', label: 'Загрузить резервную копию', hint: 'Открыть .json файл с другого устройства', do: onImport },
     { glyph: '📄', label: 'Сохранить как PDF', hint: 'Откроется страница печати — нажми Cmd+P', do: onPDF },
     { glyph: '✉', label: 'Отправить на e-mail', hint: 'Откроется почтовый клиент', do: onEmail }
-  ];
+  ].filter(a => !a.hide);
+
   return (
     <div onClick={onClose} style={{
       position: 'absolute', inset: 0, zIndex: 200,
@@ -1397,18 +1438,53 @@ function ShareMenu({ open, onClose, onPDF, onEmail }) {
       animation: 'clay-fade-in 0.15s ease-out'
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        width: 340, background: CLAY.paper,
+        width: 360, background: CLAY.paper,
         borderRadius: blob(50),
         padding: 12,
         boxShadow: '0 24px 60px rgba(40,20,10,0.45), inset 0 -4px 10px rgba(90,50,30,0.08)',
         animation: 'clay-modal-rise 0.25s cubic-bezier(0.34,1.2,0.64,1) backwards'
       }}>
+        {/* заголовок + статус облака */}
         <div style={{
           padding: '10px 14px 12px',
-          fontFamily: '"JetBrains Mono", monospace', fontSize: 10,
-          letterSpacing: '0.22em', color: CLAY.muted, textTransform: 'uppercase',
-          fontWeight: 600
-        }}>Поделиться неделей</div>
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+        }}>
+          <span style={{
+            fontFamily: '"JetBrains Mono", monospace', fontSize: 10,
+            letterSpacing: '0.22em', color: CLAY.muted, textTransform: 'uppercase',
+            fontWeight: 600
+          }}>Поделиться неделей</span>
+          {syncInfo && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontFamily: '"JetBrains Mono", monospace', fontSize: 9,
+              letterSpacing: '0.14em', color: syncInfo.dot,
+              textTransform: 'uppercase', fontWeight: 600
+            }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: syncInfo.dot }}/>
+              {syncInfo.text}
+            </span>
+          )}
+        </div>
+
+        {/* uid-строка для ручного ввода */}
+        {uid && (
+          <div style={{
+            margin: '0 14px 10px',
+            padding: '8px 12px',
+            background: CLAY.paperSoft,
+            borderRadius: 10,
+            fontFamily: '"JetBrains Mono", monospace',
+            fontSize: 10, color: CLAY.muted, letterSpacing: '0.08em',
+            wordBreak: 'break-all', lineHeight: 1.6
+          }}>
+            <span style={{ display: 'block', fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 4 }}>
+              ваш id — для ввода на другом устройстве
+            </span>
+            {uid}
+          </div>
+        )}
+
         {actions.map((a, i) => (
           <button key={i} onClick={() => { a.do(); onClose(); }} style={{
             display: 'flex', alignItems: 'center', gap: 14,
@@ -1646,7 +1722,11 @@ export default function ClayVariant() {
   const [confettiPos, setConfettiPos] = useState(null);
   const [clearConfirm, setClearConfirm] = useState(false);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
-  const rootRef = useRef(null);
+  const rootRef      = useRef(null);
+  const importFileRef = useRef(null);
+  const [uid]         = useState(getOrCreateUid);
+  const [syncStatus, setSyncStatus] = useState('idle');
+  // 'idle' | 'pending' | 'syncing' | 'saved' | 'error' | 'offline'
 
   // Swap the live CLAY palette before child JSX is built so inline styles see the right colors
   if (typeof window !== 'undefined' && window.setClayTheme) {
@@ -1733,11 +1813,43 @@ export default function ClayVariant() {
     }
     dispatch({ type: 'UI', ui: { closingDay: null }});
   }, [state.tasks, state.ui.closingDay]);
+  const handleImportFile = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const parsed = await importJSON(file);
+      dispatch({ type: 'LOAD_STATE', payload: parsed });
+      dispatch({ type: 'UI', ui: {
+        toast: { label: 'Данные загружены из файла', undoable: false }
+      }});
+    } catch (err) {
+      dispatch({ type: 'UI', ui: {
+        toast: { label: `Ошибка импорта: ${err.message}`, undoable: false }
+      }});
+    }
+    e.target.value = '';
+  }, []);
+
   const onAdviceAction = useCallback((action) => {
     if (action.kind === 'move') {
       dispatch({ type: 'MOVE_TASK_WITH_UNDO', taskId: action.taskId, toDate: action.toDate, toDateLabel: moveDateLabel(action.toDate) });
     }
   }, [moveDateLabel]);
+
+  // ───── initial cloud load ─────
+  useEffect(() => {
+    loadFromCloud(uid).then(cloud => {
+      if (!cloud) return;
+      const localAt = state.ui.savedAt || 0;
+      const cloudAt = cloud._cloudUpdatedAt
+        ? new Date(cloud._cloudUpdatedAt).getTime()
+        : 0;
+      if (cloudAt > localAt) {
+        dispatch({ type: 'LOAD_STATE', payload: cloud });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // только при монтировании
 
   // ───── week transition check ─────
   useEffect(() => {
@@ -1783,9 +1895,19 @@ export default function ClayVariant() {
     return () => clearTimeout(t);
   }, [confettiPos]);
 
-  // ───── persist state to localStorage ─────
+  // ───── persist: localStorage + cloud autosync ─────
   useEffect(() => {
     persistState(state);
+    scheduleSave(
+      uid,
+      {
+        tasks: state.tasks,
+        closedDays: state.closedDays || {},
+        lastSeenWeekId: state.ui?.lastSeenWeekId || null,
+        userClearedAll: state.ui?.userClearedAll === true
+      },
+      setSyncStatus
+    );
   }, [state.tasks, state.closedDays, state.ui.lastSeenWeekId]);
 
   // ───── persist theme ─────
@@ -1930,6 +2052,26 @@ export default function ClayVariant() {
         onClose={() => setShareMenuOpen(false)}
         onPDF={() => exportPDF(state, weekRange)}
         onEmail={() => exportEmail(state, weekRange)}
+        onExport={() => exportJSON(state)}
+        onImport={() => importFileRef.current?.click()}
+        uid={uid}
+        syncStatus={syncStatus}
+        onCopyLink={(url) => {
+          navigator.clipboard.writeText(url).then(() =>
+            dispatch({ type: 'UI', ui: {
+              toast: { label: 'Ссылка скопирована — открывай на другом устройстве', undoable: false }
+            }})
+          );
+        }}
+      />
+      {/* скрытый input для импорта */}
+      <input
+        ref={importFileRef}
+        type="file"
+        accept=".json"
+        onChange={handleImportFile}
+        style={{ display: 'none' }}
+        aria-hidden="true"
       />
 
       {/* clear-week confirm */}
