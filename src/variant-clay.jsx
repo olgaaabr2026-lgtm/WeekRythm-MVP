@@ -378,7 +378,7 @@ function CHeader({ savedAt, onClear, onNew, theme, onToggleTheme, onShare, vp })
           boxShadow: '0 2px 0 rgba(90,50,30,0.15)',
           transition: 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)',
           transform: isDark ? 'rotate(180deg)' : 'rotate(0deg)',
-          display: isMobile ? 'none' : 'flex'
+          display: 'flex'
         }}>
           {isDark ? '☀' : '☾'}
         </button>
@@ -388,8 +388,7 @@ function CHeader({ savedAt, onClear, onNew, theme, onToggleTheme, onShare, vp })
           background: CLAY.paper, border: `1.5px solid ${CLAY.borderStrong}`,
           color: CLAY.ink, borderRadius: '50%', cursor: 'pointer',
           fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 0 rgba(90,50,30,0.15)',
-          display: isMobile ? 'none' : 'flex'
+          boxShadow: '0 2px 0 rgba(90,50,30,0.15)'
         }}>↗</button>
         <button onClick={onClear} style={{
           fontFamily: 'inherit', fontSize: 14, fontWeight: 500,
