@@ -64,6 +64,14 @@ export function getShareUrl(uid) {
   return url.toString();
 }
 
+/**
+ * Возвращает true если Supabase настроен (env-переменные заданы).
+ * На GitHub Pages без ключей вернёт false — кнопка личной ссылки скроется.
+ */
+export function isCloudEnabled() {
+  return !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
+
 // ── Cloud CRUD ───────────────────────────────────────────────────────────────
 
 /**
