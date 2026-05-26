@@ -480,10 +480,19 @@ function CAdvice({ advice, onAction }) {
 }
 
 // ───────────────────────── rhythm meter ─────────────────────────
+//
+// Пак позиционируется через position:absolute поверх SVG.
+// Процентные координаты вычислены из геометрии дуги:
+//   viewBox 240×135, центр дуги (c=120, y=120), r=100.
+//   Геометрический центр чаши: x=120 → left 50%,
+//   y = 120 - 4r/(3π) ≈ 78 → top = 78/135 ≈ 57.8% ≈ 58%.
+// Такой подход работает на любой ширине без foreignObject.
+//
 function CRhythm({ value, status }) {
   const r = 100, c = 120, sw = 22;
   const mood = value > 80 ? '◡' : value > 64 ? '◡' : value > 39 ? '−' : '◠';
   const moodColor = value > 64 ? CLAY.sage : value > 39 ? CLAY.amber : CLAY.coral;
+
   const arcPath = (from, to) => {
     const a0 = Math.PI + (from / 100) * Math.PI;
     const a1 = Math.PI + (to / 100) * Math.PI;
@@ -515,53 +524,101 @@ function CRhythm({ value, status }) {
         }}>Настроение недели</div>
       </div>
 
-      <div style={{ position: 'relative', width: '100%', margin: '0 auto' }}>
-        <svg viewBox="0 0 240 160" width="100%" style={{ overflow: 'visible', display: 'block' }}>
-          <path d={arcPath(0, 100)} fill="none" stroke={CLAY.clay} strokeWidth={sw} strokeLinecap="round"/>
-          <path d={arcPath(0, value || 1)} fill="none"
-            stroke={moodColor} strokeWidth={sw} strokeLinecap="round"
+      {/*
+        Обёртка position:relative — якорь для абсолютного пака.
+        SVG: viewBox 240×135 (обрезан снизу; дуга + метки умещаются до y≈131).
+        overflow:visible сохраняет видимость меток у краёв.
+      */}
+      <div style={{ position: 'relative', width: '100%' }}>
+        <svg
+          viewBox="0 0 240 135"
+          style={{ display: 'block', width: '100%', overflow: 'visible' }}
+          aria-hidden="true"
+        >
+          {/* трек (серый) */}
+          <path
+            d={arcPath(0, 100)}
+            fill="none"
+            stroke={CLAY.clay}
+            strokeWidth={sw}
+            strokeLinecap="round"
+          />
+          {/* прогресс (цветной) */}
+          <path
+            d={arcPath(0, value || 1)}
+            fill="none"
+            stroke={moodColor}
+            strokeWidth={sw}
+            strokeLinecap="round"
             style={{
               filter: `drop-shadow(0 2px 4px ${moodColor}66)`,
-              strokeDasharray: 1000, strokeDashoffset: 1000,
+              strokeDasharray: 1000,
+              strokeDashoffset: 1000,
               animation: 'morning-arc-trace 1.8s 0.3s ease-out forwards',
-              transition: 'd 0.5s ease'
-            }}/>
+            }}
+          />
+          {/* метки шкалы */}
           {[0, 33, 66, 100].map((tv, i) => {
-            const a = Math.PI + (tv / 100) * Math.PI;
+            const a  = Math.PI + (tv / 100) * Math.PI;
             const tx = c + (r + sw / 2 + 14) * Math.cos(a);
             const ty = c + (r + sw / 2 + 14) * Math.sin(a) + 3;
-            const labels = ['0', '33', '66', '100'];
             return (
-              <text key={tv} x={tx} y={ty}
+              <text
+                key={tv}
+                x={tx} y={ty}
                 textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}
-                style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, fill: CLAY.muted, letterSpacing: '0.1em' }}>
-                {labels[i]}
+                style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: 9, fill: CLAY.muted, letterSpacing: '0.1em'
+                }}
+              >
+                {['0','33','66','100'][i]}
               </text>
             );
           })}
-          {/* пак с числом — внутри SVG, позиция не зависит от масштаба */}
-          <foreignObject x="70" y="50" width="100" height="100">
-            <div xmlns="http://www.w3.org/1999/xhtml" style={{
-              width: '100%', height: '100%',
-              background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
-              borderRadius: blob(7),
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
-              boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
-              animation: 'clay-mood-breathe 5s ease-in-out infinite',
-              boxSizing: 'border-box'
-            }}>
-              <div style={{
-                fontFamily: 'Fraunces, Georgia, serif',
-                fontSize: 38, fontWeight: 300,
-                color: CLAY.ink, lineHeight: 1
-              }}>{value}</div>
-              <div style={{
-                fontSize: 18, color: moodColor, marginTop: -4, fontWeight: 700
-              }}>{mood}</div>
-            </div>
-          </foreignObject>
         </svg>
+
+        {/*
+          Пак — наложен поверх SVG, не внутри него.
+          left: 50%  → x = 120/240 = 50% viewBox
+          top:  58%  → y ≈ 78/135 = 57.8% viewBox (центроид чаши)
+          width: 31% → ≈ 75px при типичной ширине карточки
+          aspect-ratio 1:1 сохраняет круглость на любой ширине
+        */}
+        <div style={{
+          position: 'absolute',
+          top: '58%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '31%',
+          aspectRatio: '1 / 1',
+          background: `radial-gradient(circle at 35% 30%, ${CLAY.cream} 0%, ${moodColor}88 80%)`,
+          borderRadius: blob(7),
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: `inset -4px -6px 12px ${moodColor}55, inset 2px 3px 6px rgba(255,250,240,0.5), 0 4px 12px rgba(0,0,0,0.1)`,
+          animation: 'clay-mood-breathe 5s ease-in-out infinite',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          boxSizing: 'border-box',
+          zIndex: 1,
+        }}>
+          <div style={{
+            fontFamily: 'Fraunces, Georgia, serif',
+            fontSize: 'clamp(16px, 2.8vw, 38px)',
+            fontWeight: 300,
+            color: CLAY.ink,
+            lineHeight: 1,
+          }}>{value}</div>
+          <div style={{
+            fontSize: 'clamp(11px, 1.5vw, 18px)',
+            color: moodColor,
+            marginTop: 2,
+            fontWeight: 700,
+          }}>{mood}</div>
+        </div>
       </div>
 
       <div style={{
