@@ -416,12 +416,14 @@ function calcAdvice(tasks, isFirstVisit) {
 
   // overload check — suggest moving a task from overloaded day to lightest day
   const weekDs = getCurrentWeekDates();
+  const today = getTodayISO();
   const dayScores = weekDs.map(d => ({ d, ds: fmtDate(d), score: dayLoad(tasks, fmtDate(d)) }));
-  const overload = dayScores.find(x => loadKey(x.score) === 'overload');
+  // Рассматриваем только сегодня и будущие дни — прошедшие уже не изменить
+  const overload = dayScores.find(x => x.ds >= today && loadKey(x.score) === 'overload');
   if (overload) {
     // find a lightest day that isn't itself overloaded
     const lightest = [...dayScores]
-      .filter(x => x.ds !== overload.ds && loadKey(x.score) !== 'overload')
+      .filter(x => x.ds !== overload.ds && x.ds >= today && loadKey(x.score) !== 'overload')
       .sort((a, b) => a.score - b.score)[0];
     // pick the smallest non-important task on overload day
     const movableTask = tasks
