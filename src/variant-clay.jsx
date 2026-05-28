@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useReducer, useRef, useMemo, useCallback } from 'react';
 import { useViewport } from './use-viewport.js';
+import { listenOnce, parseVoiceCommand } from './voice.js';
 import {
   CLAY, CLAY_BADGES, CLAY_CATEGORIES, CLAY_DURATIONS, CLAY_ENERGIES,
   antichaosHint, blob, calcAdvice, calcBalance, calcProgress, categoryOf,
@@ -96,7 +97,8 @@ function reducer(state, action) {
         }
       });
     }
-    case 'DELETE_TASK': {
+    case 'DELETE_TASK':
+    case 'VOICE_DELETE_TASK': {
       const deleted = state.tasks.find(t => t.id === action.id);
       if (!deleted) return state;
       const title = deleted.title || '';
@@ -110,6 +112,23 @@ function reducer(state, action) {
             label: `Удалено: «${shortTitle}»`,
             undoable: true,
             snapshot: { task: deleted }
+          }
+        }
+      });
+    }
+    case 'VOICE_ADD_TASK': {
+      const task = action.task;
+      return touch({
+        ...state,
+        tasks: [...state.tasks, task],
+        ui: {
+          ...state.ui,
+          userClearedAll: false,
+          toast: {
+            label: `Добавлено: «${task.title}»${task.date ? ` · ${action.dateLabel}` : ''}`,
+            undoable: true,
+            duration: 3000,
+            snapshot: { voiceAddedId: task.id }
           }
         }
       });
@@ -198,6 +217,13 @@ function reducer(state, action) {
           ui: { ...state.ui, toast: null }
         });
       }
+      if (snapshot.voiceAddedId) {
+        return touch({
+          ...state,
+          tasks: state.tasks.filter(t => t.id !== snapshot.voiceAddedId),
+          ui: { ...state.ui, toast: null }
+        });
+      }
       if (snapshot.taskId && snapshot.oldDate !== undefined) {
         return touch({
           ...state,
@@ -276,6 +302,37 @@ function CWash({ color, x, y, size = 320, opacity = 0.5, drift = 0 }) {
       filter: 'blur(36px)', opacity, pointerEvents: 'none',
       animation: `garden-drift ${20 + drift}s ease-in-out infinite alternate`
     }}/>
+  );
+}
+
+function VoiceMicButton({ state: voiceState, onClick }) {
+  // voiceState: 'idle' | 'listening' | 'processing'
+  const isListening  = voiceState === 'listening';
+  const isProcessing = voiceState === 'processing';
+  const isActive     = isListening || isProcessing;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={isActive}
+      title={isListening ? 'Слушаю...' : isProcessing ? 'Обрабатываю...' : 'Голосовая команда'}
+      style={{
+        width: 36, height: 36,
+        borderRadius: '50%',
+        border: `1.5px solid ${isListening ? CLAY.coral : isProcessing ? CLAY.amber : CLAY.borderStrong}`,
+        background: isListening ? CLAY.coralSoft : isProcessing ? CLAY.amberSoft : CLAY.paper,
+        color: isListening ? CLAY.coral : isProcessing ? CLAY.amber : CLAY.muted,
+        cursor: isActive ? 'default' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 16,
+        boxShadow: '0 2px 0 rgba(90,50,30,0.15)',
+        animation: isListening ? 'clay-mood-breathe 1.2s ease-in-out infinite' : 'none',
+        transition: 'all 0.2s ease',
+        flexShrink: 0,
+      }}
+    >
+      {isProcessing ? '⏳' : '🎤'}
+    </button>
   );
 }
 
@@ -701,7 +758,7 @@ function Bowl({ sphere, delay, seed }) {
 }
 
 // ───────────────────────── week board ─────────────────────────
-function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onDelete, onCloseDay, onOpenDay, onDrop, dragOverDate, setDragOver, vp, onNew }) {
+function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onDelete, onCloseDay, onOpenDay, onDrop, dragOverDate, setDragOver, vp, onNew, onVoice, voiceState }) {
   const weekDs = getCurrentWeekDates();
   return (
     <div className="clay-section" style={{ position: 'relative', margin: vp.isMobile ? '0 16px' : '0 48px' }}>
@@ -738,23 +795,33 @@ function CWeekBoard({ tasks, closedDays, progress, onToggle, onEdit, onMove, onD
             letterSpacing: '0.1em', color: CLAY.muted, fontWeight: 600,
             border: `1px solid ${CLAY.border}`
           }}>{progress.completed} / {progress.total}</span>
-          {onNew && (
-            <button
-              onClick={onNew}
-              style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
-                padding: vp.isMobile ? '10px 0' : '7px 16px',
-                borderRadius: 999,
-                background: CLAY.coral, color: '#fff',
-                border: 'none', cursor: 'pointer', fontWeight: 700,
-                width: vp.isMobile ? '100%' : 'auto',
-                transition: 'opacity 0.15s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-            >+ Новая задача</button>
-          )}
+          {/* На мобильном: mic + кнопка в одном ряду, кнопка растягивается */}
+          <div style={{
+            display: 'flex', gap: 8,
+            width: vp.isMobile ? '100%' : 'auto',
+            alignItems: 'center',
+          }}>
+            {onVoice && (
+              <VoiceMicButton state={voiceState} onClick={onVoice} />
+            )}
+            {onNew && (
+              <button
+                onClick={onNew}
+                style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase',
+                  padding: vp.isMobile ? '10px 0' : '7px 16px',
+                  borderRadius: 999,
+                  background: CLAY.coral, color: '#fff',
+                  border: 'none', cursor: 'pointer', fontWeight: 700,
+                  flex: vp.isMobile ? 1 : 'none',
+                  transition: 'opacity 0.15s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >+ Новая задача</button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1746,6 +1813,8 @@ export default function ClayVariant() {
   const [uid]         = useState(getOrCreateUid);
   const [syncStatus, setSyncStatus] = useState('idle');
   // 'idle' | 'pending' | 'syncing' | 'saved' | 'error' | 'offline'
+  const voiceEnabled = !!import.meta.env.VITE_ANTHROPIC_KEY;
+  const [voiceState, setVoiceState] = useState('idle'); // 'idle' | 'listening' | 'processing'
 
   // Swap the live CLAY palette before child JSX is built so inline styles see the right colors
   if (typeof window !== 'undefined' && window.setClayTheme) {
@@ -1805,6 +1874,99 @@ export default function ClayVariant() {
     dispatch({ type: 'MOVE_TASK_WITH_UNDO', taskId: id, toDate: date, toDateLabel: moveDateLabel(date) });
     dispatch({ type: 'UI', ui: { movingTaskId: null }});
   }, [moveDateLabel]);
+
+  const handleVoiceInput = useCallback(async () => {
+    if (voiceState !== 'idle') return;
+
+    const weekDatesISO = getCurrentWeekDates().map(d => fmtDate(d));
+    const today = getTodayISO();
+    const showVoiceToast = (label, duration = 3000) => {
+      dispatch({ type: 'UI', ui: { toast: { label, undoable: false, duration } } });
+    };
+    const findTaskByTitle = (title, options = {}) => {
+      const needle = (title || '').trim().toLowerCase();
+      if (!needle) return null;
+      return state.tasks.find(t =>
+        (!options.onlyIncomplete || !t.completed) &&
+        (t.title || '').toLowerCase().includes(needle)
+      );
+    };
+
+    try {
+      setVoiceState('listening');
+      const text = await listenOnce();
+
+      setVoiceState('processing');
+      const cmd = await parseVoiceCommand(text, weekDatesISO);
+
+      switch (cmd.action) {
+        case 'add': {
+          const task = {
+            id: newTaskId(),
+            title: cmd.title || 'Задача без названия',
+            date: cmd.date || today,
+            category: cmd.category || 'work',
+            energy: cmd.energy || 2,
+            duration: '30м',
+            important: false,
+            completed: false,
+            note: ''
+          };
+          dispatch({
+            type: 'VOICE_ADD_TASK',
+            task,
+            dateLabel: task.date ? dateLabel(parseDate(task.date)) : null
+          });
+          break;
+        }
+
+        case 'move': {
+          const found = findTaskByTitle(cmd.title, { onlyIncomplete: true });
+          if (!found) {
+            showVoiceToast(`Задача «${cmd.title || 'без названия'}» не найдена`);
+            break;
+          }
+          dispatch({
+            type: 'MOVE_TASK_WITH_UNDO',
+            taskId: found.id,
+            toDate: cmd.targetDate,
+            toDateLabel: cmd.targetDate ? dateLabel(parseDate(cmd.targetDate)) : null
+          });
+          break;
+        }
+
+        case 'complete': {
+          const found = findTaskByTitle(cmd.title, { onlyIncomplete: true });
+          if (!found) {
+            showVoiceToast(`Задача «${cmd.title || 'без названия'}» не найдена`);
+            break;
+          }
+          dispatch({ type: 'TOGGLE_TASK', id: found.id });
+          showVoiceToast(`Выполнено: «${found.title}»`);
+          break;
+        }
+
+        case 'delete': {
+          const found = findTaskByTitle(cmd.title);
+          if (!found) {
+            showVoiceToast(`Задача «${cmd.title || 'без названия'}» не найдена`);
+            break;
+          }
+          dispatch({ type: 'DELETE_TASK', id: found.id });
+          break;
+        }
+
+        case 'unknown':
+        default:
+          showVoiceToast('Не понял команду. Попробуй ещё раз.');
+          break;
+      }
+    } catch (err) {
+      showVoiceToast(err.message, 4000);
+    } finally {
+      setVoiceState('idle');
+    }
+  }, [voiceState, state.tasks]);
   const onDrop = useCallback((id, dateStr) => {
     dispatch({ type: 'MOVE_TASK_WITH_UNDO', taskId: id, toDate: dateStr, toDateLabel: moveDateLabel(dateStr) });
   }, [moveDateLabel]);
@@ -1995,6 +2157,8 @@ export default function ClayVariant() {
         setDragOver={(d) => dispatch({ type: 'UI', ui: { dragOverDate: d }})}
         vp={vp}
         onNew={() => openNew()}
+        onVoice={voiceEnabled ? handleVoiceInput : undefined}
+        voiceState={voiceState}
       />
 
       <div className="clay-section" style={{

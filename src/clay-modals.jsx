@@ -550,7 +550,7 @@ function ChoiceCard({ onClick, title, hint, glyph, primary, danger }) {
 function ToastStack({ toast, onUndo, onDismiss }) {
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(onDismiss, 5000);
+    const t = setTimeout(onDismiss, toast.duration ?? 5000);
     return () => clearTimeout(t);
   }, [toast, onDismiss]);
   if (!toast) return null;
