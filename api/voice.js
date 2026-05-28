@@ -73,9 +73,10 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const raw = data.content?.[0]?.text || '';
+    const cleaned = raw.replace(/```json\n?|\n?```/g, '').trim();
 
     try {
-      const cmd = JSON.parse(raw);
+      const cmd = JSON.parse(cleaned);
       return res.status(200).json({ ...cmd, raw: text });
     } catch {
       return res.status(200).json({
