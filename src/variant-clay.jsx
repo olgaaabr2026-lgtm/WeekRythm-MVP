@@ -1813,7 +1813,7 @@ export default function ClayVariant() {
   const [uid]         = useState(getOrCreateUid);
   const [syncStatus, setSyncStatus] = useState('idle');
   // 'idle' | 'pending' | 'syncing' | 'saved' | 'error' | 'offline'
-  const voiceEnabled = !!import.meta.env.VITE_ANTHROPIC_KEY;
+  const voiceEnabled = import.meta.env.VITE_VOICE_ENABLED === 'true';
   const [voiceState, setVoiceState] = useState('idle'); // 'idle' | 'listening' | 'processing'
 
   // Swap the live CLAY palette before child JSX is built so inline styles see the right colors
